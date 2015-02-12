@@ -1,16 +1,22 @@
 // *********************************************************************
 //     BLOCK
 // *********************************************************************
-var Block = function(blockSizing, relx, rely) {
+var Block = function(blockSizing, relx, rely, blockColor) {
   this.dimension = blockSizing;
   this.relx = relx;
   this.rely = rely;
+
+  this.blockColor = blockColor;
 };
 
 Block.prototype.setRelPos = function(coords){
   this.relx = coords[0];
   this.rely = coords[1];
   return this;
+}
+
+Block.prototype.setColor = function(theColor){
+ this.blockColor = theColor; 
 }
 
 Block.prototype.render = function(){
@@ -24,6 +30,8 @@ Block.prototype.render = function(){
 
   this.$el.addClass("block").css("top",that.rely*that.dimension + "px")
                             .css("left",that.relx*that.dimension + "px");
+
+  this.$el.css("background",this.blockColor);
 
   return this.$el;
 };
@@ -46,7 +54,8 @@ var Piece = function(blockSizing, posx, posy) {
   this.rotations = []; // rotations[0] = default view
   this.rotation; // Currently used rotation
 
-  this.dimension;
+  this.dimensionX;
+  this.dimensionY;
 
   this.lastMove;
 };
@@ -94,9 +103,26 @@ Piece.prototype.parseTemplate = function(singleTemplate){
         var datum = singleTemplate[row][col];
         if (datum) { coords[datum-1] = [col,row]; } // 'Backwards,' but correct.
     }
-    if (this.dimension === undefined) { this.dimension = col; }
+    if (this.dimensionX === undefined) { this.dimensionX = col; }
   }
+  if (this.dimensionY === undefined) { this.dimensionY = row; }
   return coords;
+}
+
+Piece.prototype.parseBinaryTemplate = function(binaryTemplate){
+  console.log("Parsing binary template.");
+  this.blocks = [];
+
+  for (var row=0; row < binaryTemplate.length; row++){
+    for (var col=0; col < binaryTemplate[row].length; col++){
+        var datum = binaryTemplate[row][col];
+        if (datum) { this.blocks.push(new Block(this.blockSizing,col,row)); } // 'Backwards,' but correct.
+    }
+    if (this.dimensionX === undefined) { this.dimensionX = col; }
+  }
+  if (this.dimensionY === undefined) { this.dimensionY = row; }
+
+  return this;
 }
 
 Piece.prototype.computeMove = function(moveDirection){
@@ -155,14 +181,37 @@ Piece.prototype.commitLastMove = function(){
   return this;
 };
 
-Piece.prototype.render = function(){
-  //console.log("Rendering: ", this);
+Piece.prototype.setColor = function(theColor){
+  var that = this;
 
+  if ( theColor === undefined ){
+    var randomRedVal = Math.round(Math.random()*255);
+    var randomGreenVal = Math.round(Math.random()*255);
+    var randomBlueVal = Math.round(Math.random()*255);
+
+    this.blockColor = "rgb(" + [randomRedVal, randomGreenVal, randomBlueVal].join(",") + ")";
+  }
+  else {
+    this.blockColor = theColor;
+  }
+
+  _.map(this.blocks, function(aBlock){
+    aBlock.setColor(that.blockColor);
+  });
+
+  return this;
+}
+
+Piece.prototype.getColor = function(){
+  return this.blockColor;
+}
+
+Piece.prototype.render = function(){
   var that=this;
   if (this.$el === undefined){ 
     this.$el = $("<div>").css("position","absolute")
-                         .css("width",that.dimension*that.blockSizing + "px")
-                         .css("height",that.dimension*that.blockSizing + "px");
+                         .css("width",that.dimensionX*that.blockSizing + "px")
+                         .css("height",that.dimensionY*that.blockSizing + "px");
   }
   else { this.$el.text(""); }
 
@@ -413,13 +462,14 @@ Playfield.prototype.moveActivePiece = function(moveDirection){
 
 Playfield.prototype.setActivePiece = function(pieceObj){
   this.activePiece = pieceObj;
-  this.activePiece.posx = Math.round((this.fieldWidth/2)-(this.activePiece.dimension/2));
+  this.activePiece.posx = Math.round((this.fieldWidth/2)-(this.activePiece.dimensionX/2));
   this.activePiece.posy = 0;
   return this;
 }
 
 Playfield.prototype.retireActivePiece = function(){
   var retiredBlocks = this.activePiece.blocks;
+  var retiredColor = this.activePiece.getColor();
   var that = this;
   // _.map(retiredBlocks, function(retiredBlock){
   //   retiredBlock.relx += that.activePiece.posx;
@@ -430,7 +480,7 @@ Playfield.prototype.retireActivePiece = function(){
   var staticBlocks = _.map(retiredBlocks, function(retiredBlock){
     var xpos = retiredBlock.relx + that.activePiece.posx;
     var ypos = retiredBlock.rely + that.activePiece.posy;
-    return new Block(that.blockDimension,xpos,ypos);
+    return new Block(that.blockDimension,xpos,ypos,retiredColor);
   });
 
   console.log(staticBlocks);
@@ -443,6 +493,7 @@ Playfield.prototype.retireActivePiece = function(){
 
 Playfield.prototype.clearLines = function(){
   var that=this;
+  var clearedLines = 0;
 
   for (var i=this.fieldHeight-1; i >= 0; i--){
     var blocks = _.where(this.staticBlocks, {rely: i});
@@ -453,6 +504,8 @@ Playfield.prototype.clearLines = function(){
     else if (blockCount === this.fieldWidth){
       while (blockCount === this.fieldWidth){
         console.log("CLEAR LINE");
+        clearedLines++;
+
         _.map(blocks, function(aBlock) {
           that.staticBlocks.splice(that.staticBlocks.indexOf(aBlock),1); // Remove block from static blocks
         });
@@ -468,7 +521,7 @@ Playfield.prototype.clearLines = function(){
     }
   }
 
-  return this;
+  return clearedLines;
 }
 
 Playfield.prototype.render = function(){
@@ -493,7 +546,17 @@ var Game = function(blockSizing, playFieldDimensions,pieceFrequencies){
   this.playfield = new Playfield(blockSizing,playFieldDimensions[0],playFieldDimensions[1]);
   this.blockSizing = blockSizing;
 
+  this.state = "paused";
+  this.deusSpeed = 500;
+  this.deusTimer;
+
   this.nextPiece;
+  this.clearedLines = 0;
+  this.score = 0;
+  this.level = 1;
+
+  this.pointsPerBlock = 100;
+  this.linesPerLevel = 20;
 
   // Piece frequencies
   // [0] rod
@@ -510,6 +573,8 @@ var Game = function(blockSizing, playFieldDimensions,pieceFrequencies){
     this.pieceSelectionCutoffs.push(minVal + pieceFrequencies[i]);
     minVal += pieceFrequencies[i];
   }
+
+  this.logo;
 }
 
 Game.prototype.startGame = function(){
@@ -518,6 +583,23 @@ Game.prototype.startGame = function(){
   this.nextPiece = this.generateNewPiece();
 
   this.render();
+}
+
+Game.prototype.toggleState = function(){
+  var that = this;
+
+  switch(this.state){
+    case "paused":
+      this.state = "running";
+      this.deusTimer = setInterval( function(){ that.move("down"); }, this.deusSpeed);
+      break;
+    case "running":
+      this.state = "paused";
+      clearInterval(this.deusTimer);
+      break;
+    default:
+      console.log("Oops...game pause/run error");
+  }
 }
 
 Game.prototype.generateNewPiece = function(){
@@ -536,6 +618,8 @@ Game.prototype.generateNewPiece = function(){
 
   newPiece.setRotation(0);
 
+  newPiece.setColor();
+
   return newPiece;
 }
 
@@ -546,8 +630,23 @@ Game.prototype.move = function(moveDirection){
     if (moveDirection === "down"){
       // Piece has hit its 'final' location
       // --> Leave the piece where it is, and create a new activePiece
-      this.playfield.retireActivePiece().clearLines().setActivePiece(this.nextPiece).render();
+      var newlyClearedLines = this.playfield.retireActivePiece().clearLines();
+
+      // Update lines and score
+      this.clearedLines += newlyClearedLines;
+      this.score += (this.pointsPerBlock*this.level*4); // Score from dropped piece --> 4 blocks
+      this.score += (newlyClearedLines*this.playfield.fieldWidth*this.pointsPerBlock*this.level); // Score from cleared lines
+
+      // Update level
+      if (this.lines > this.linesPerLevel){
+        this.lines = 0;
+        this.level++;
+      }
+
+      this.playfield.setActivePiece(this.nextPiece);
       this.nextPiece = this.generateNewPiece();
+
+      this.render();
     }
   }
   // Else everything OK and piece was already moved
@@ -555,9 +654,31 @@ Game.prototype.move = function(moveDirection){
 
 Game.prototype.render = function(){
   if (this.$el === undefined) { this.$el = $(".game-container"); }
-  else { this.$el.text(""); }
+  else {
+    $(".game-logo").text();
+    $(".game-playfield-container").text("");
+    $(".game-aux-score-data").text("");
+    $(".game-aux-level-data").text("");
+    $(".game-aux-next-piece-data").text("");
+    $(".game-aux-line-count-data").text("");
+  }
 
-  this.$el.append(this.playfield.render());
+  $(".game-playfield-container").append(this.playfield.render());
+
+  // Determine height of playfield and set height of aux-container
+  var playfieldHeight = (this.playfield.fieldHeight * this.playfield.blockDimension); 
+  console.log(playfieldHeight);
+  $(".game-aux-container").css("height",playfieldHeight + "px");
+
+  $(".game-aux-score-data").append(this.score);
+  $(".game-aux-next-piece-data").append(this.nextPiece.render());
+  $(".game-aux-level-data").append(this.level);
+  $(".game-aux-line-count-data").append(this.clearedLines);
+
+  if (this.logo) {
+
+    $(".game-logo").append(this.logo.render());
+  }
 
   return this.$el;
 }
@@ -568,6 +689,21 @@ Game.prototype.render = function(){
 // *********************************************************************
 
 var theGame = new Game(25,[15,20],[.04, .13, .19, .19, .19, .13, .13]);
+
+
+// *********************************************************************
+//     EXTRA: LOGO
+// *********************************************************************
+var logoTemplate = [[1,1,1,1,1,0,1,1,1,0,0,1,0,0,1,0,0,0,1,0,1,0,1,1,1],
+                    [0,0,1,0,0,0,1,0,1,0,0,1,0,0,1,1,1,0,1,0,1,0,0,0,1],
+                    [0,0,1,0,0,0,1,1,1,0,1,1,1,0,1,0,0,0,1,0,1,0,0,1,0],
+                    [0,0,1,0,0,0,1,0,0,0,0,1,0,0,1,0,0,0,1,0,1,0,1,0,0],
+                    [0,0,1,0,0,0,1,1,1,0,0,1,1,0,1,0,0,0,1,1,1,0,1,1,1]];
+
+theGame.logo = new Piece(theGame.blockSizing,0,0);
+theGame.logo.parseBinaryTemplate(logoTemplate);
+
+// *********************************************************************
 
 $(document).on("ready", function() {
   theGame.startGame();
@@ -592,29 +728,11 @@ $(document).keydown(function(e) {
     case 38: // up
       theGame.move("up");
       break;
+    case 32: // Space bar
+      theGame.toggleState();
+      break;
     default:
       console.log("IGNORED USER INPUT");
   }
+  currentPiece.render();
 });
-
-
-//       case 32: // space bar
-//         switch(currentState){
-//           case "paused":
-//             currentState = "running";
-//             currentTimer = setInterval(function() {
-//               currentPiece.move("down").render();
-//             }, currentSpeed);
-//             break;
-//           case "running":
-//             currentState = "paused";
-//             clearInterval(currentTimer);
-//             break;
-//           default:
-//             console.log("Oops...game pause/run error");
-//         }
-//         break;
-//       default: return; // exit this handler for other keys
-//   }
-//   currentPiece.render();
-// });

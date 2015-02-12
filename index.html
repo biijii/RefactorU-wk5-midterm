@@ -2,18 +2,47 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>Untitled</title>
+    <title>Tetruz</title>
+    <!-- CSS -->
     <link rel="stylesheet" type="text/css" href="http://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.2.0/css/bootstrap.min.css">
     <link rel="stylesheet" type="text/css" href="main.css">
+    <!-- Fonts -->
+    <link href='http://fonts.googleapis.com/css?family=Press+Start+2P' rel='stylesheet' type='text/css'>
   </head>
   <body>
-    <div class="container">
-      <div class="row">
+    <div class="container game-container">
+      <div class="game-logo row"></div>
+      <div class="game-game row">
         <div class="col-xs-8">
-          <div class="game-container"></div>
+          <div class="game-playfield-container"></div>
         </div>
         <div class="col-xs-4" id="test">
-          <div class="game-aux-container"</div>
+          <div class="game-aux-container">
+            <div class="game-aux-score aux-outer row">
+              <div class="aux-inner">
+                <div class="game-aux-score-label">Total Score</div>
+                <div class="game-aux-score-data"></div>
+              </div>
+            </div>
+            <div class="game-aux-next-piece aux-outer row">
+              <div class="aux-inner">
+                <div class="game-aux-next-piece-label">Next Piece</div>
+                <div class="game-aux-next-piece-data"></div>
+              </div>
+            </div>
+            <div class="game-aux-level aux-outer row">
+              <div class="aux-inner">
+                <div class="game-aux-level-label">Level</div>
+                <div class="game-aux-level-data"></div>
+              </div>
+            </div>
+            <div class="game-aux-line-count aux-outer row">
+              <div class="aux-inner">
+                <div class="game-aux-line-count-label">Lines</div>
+                <div class="game-aux-line-count-data"></div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
