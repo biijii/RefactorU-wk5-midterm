@@ -1,0 +1,22 @@
+
+.block {
+	border-bottom: 3px solid darkgray;
+	border-left: 3px solid darkgray;
+	border-top: 3px solid lightgray;
+	border-right: 3px solid lightgray;
+	border-radius: 2px;
+	background: red;
+
+	/*opacity: 0.8;*/
+}
+
+.piece {
+	background: rgba(0,255,0,0.5)
+}
+
+.playfield {
+	/*background: rgba(0,0,0,0.7);*/
+	background: black;
+	margin: auto;
+	overflow: hidden;
+}
