@@ -60,6 +60,13 @@ var Piece = function(blockSizing, posx, posy) {
   this.lastMove;
 };
 
+Piece.prototype.getCoords = function(){
+  var that = this;
+  return _.map(this.blocks, function(aBlock){
+    return [that.posx + aBlock.relx, that.posy + aBlock.rely];
+  });
+}
+
 Piece.prototype.setBlockSizing = function(blockSizing){
   this.blockSizing = blockSizing;
 
@@ -110,7 +117,7 @@ Piece.prototype.parseTemplate = function(singleTemplate){
 }
 
 Piece.prototype.parseBinaryTemplate = function(binaryTemplate){
-  console.log("Parsing binary template.");
+  // console.log("Parsing binary template.");
   this.blocks = [];
 
   for (var row=0; row < binaryTemplate.length; row++){
@@ -138,7 +145,7 @@ Piece.prototype.computeMove = function(moveDirection){
       this.provisionalPos = [this.posx+1,this.posy];
       break;
     case "up": // ROTATE
-      console.log("ROTATE");
+      // console.log("ROTATE");
       this.provisionalPos = [this.posx,this.posy];
       break;
     default:
@@ -421,7 +428,14 @@ var Playfield = function(blockDimension,widthInBlocks,heightInBlocks){
   this.fieldHeight = heightInBlocks;
   this.activePiece;
   this.staticBlocks = [];
+
+  this.bordersWidth = 5; //Width in pixels of playfield border
 };
+
+Playfield.prototype.resetPlayfield = function(){
+  this.staticBlocks = [];
+  return this;
+}
 
 Playfield.prototype.simulateCollision = function(coordArray){
   for (var i=0; i < coordArray.length; i++){
@@ -483,8 +497,6 @@ Playfield.prototype.retireActivePiece = function(){
     return new Block(that.blockDimension,xpos,ypos,retiredColor);
   });
 
-  console.log(staticBlocks);
-
   this.staticBlocks = this.staticBlocks.concat(staticBlocks);
 
   this.activePiece = undefined;
@@ -498,12 +510,12 @@ Playfield.prototype.clearLines = function(){
   for (var i=this.fieldHeight-1; i >= 0; i--){
     var blocks = _.where(this.staticBlocks, {rely: i});
     var blockCount = blocks.length;
-    console.log("Line " + i + ": ", blockCount);
+    // console.log("Line " + i + ": ", blockCount);
 
     if (blockCount === 0) { break; }
     else if (blockCount === this.fieldWidth){
       while (blockCount === this.fieldWidth){
-        console.log("CLEAR LINE");
+        // console.log("CLEAR LINE");
         clearedLines++;
 
         _.map(blocks, function(aBlock) {
@@ -525,10 +537,15 @@ Playfield.prototype.clearLines = function(){
 }
 
 Playfield.prototype.render = function(){
-  if (this.$el === undefined) { this.$el = $("<div>").addClass("playfield").css("position","relative").css("width",this.fieldWidth*this.blockDimension).css("height",this.fieldHeight*this.blockDimension); }
+  if (this.$el === undefined) {
+    this.$el = $("<div>").addClass("playfield")
+                         .css("position","relative")
+                         .css("width",this.fieldWidth*this.blockDimension+(2*this.bordersWidth))
+                         .css("height",this.fieldHeight*this.blockDimension+(2*this.bordersWidth));
+  }
   else { this.$el.text(""); }
 
-  console.log("Rendering playfield");
+  // console.log("Rendering playfield");
 
   for(var i=0; i<this.staticBlocks.length; i++){
     this.$el.append(this.staticBlocks[i].render());
@@ -547,16 +564,19 @@ var Game = function(blockSizing, playFieldDimensions,pieceFrequencies){
   this.blockSizing = blockSizing;
 
   this.state = "paused";
-  this.deusSpeed = 500;
+  // this.deusSpeed = 500;
   this.deusTimer;
 
   this.nextPiece;
-  this.clearedLines = 0;
-  this.score = 0;
-  this.level = 1;
+  // this.clearedLinesTotal = 0;
+  // this.clearedLinesLevel = 0;
+  // this.score = 0;
+  // this.level = 1;
 
-  this.pointsPerBlock = 100;
-  this.linesPerLevel = 20;
+  this.pointsPerBlock = 10;
+  this.linesPerLevel = 10;
+
+  this.speedIncreasePerLevel = 0.10; // Speed will increase ten percent each time
 
   // Piece frequencies
   // [0] rod
@@ -577,12 +597,21 @@ var Game = function(blockSizing, playFieldDimensions,pieceFrequencies){
   this.logo;
 }
 
-Game.prototype.startGame = function(){
-  this.playfield.setActivePiece(this.generateNewPiece());
+Game.prototype.newGame = function(){
+  this.state = "paused";
 
+  this.deusSpeed = 500;
+
+  this.clearedLinesTotal = 0;
+  this.clearedLinesLevel = 0;
+  this.score = 0;
+  this.level = 1;
+
+  this.playfield.resetPlayfield().setActivePiece(this.generateNewPiece());
   this.nextPiece = this.generateNewPiece();
-
   this.render();
+
+  $("#pausedModal").modal({"backdrop" : "static", "keyboard" : false});
 }
 
 Game.prototype.toggleState = function(){
@@ -633,20 +662,36 @@ Game.prototype.move = function(moveDirection){
       var newlyClearedLines = this.playfield.retireActivePiece().clearLines();
 
       // Update lines and score
-      this.clearedLines += newlyClearedLines;
+      this.clearedLinesTotal += newlyClearedLines;
+      this.clearedLinesLevel += newlyClearedLines;
+
       this.score += (this.pointsPerBlock*this.level*4); // Score from dropped piece --> 4 blocks
       this.score += (newlyClearedLines*this.playfield.fieldWidth*this.pointsPerBlock*this.level); // Score from cleared lines
 
       // Update level
-      if (this.lines > this.linesPerLevel){
-        this.lines = 0;
+      if (this.clearedLinesLevel >= this.linesPerLevel){
+        this.clearedLinesLevel = 0;
         this.level++;
+
+        // Increase speed
+        this.toggleState();
+        this.deusSpeed *= (1-this.speedIncreasePerLevel);
+        console.log("NEW DEUS SPEED: ", this.deusSpeed);
+        this.toggleState();
       }
 
       this.playfield.setActivePiece(this.nextPiece);
       this.nextPiece = this.generateNewPiece();
-
       this.render();
+
+      // Check to see if newly active piece is already colliding ---> game over
+      if (this.playfield.simulateCollision(this.playfield.activePiece.getCoords())){
+        // Game over
+        console.log("GAME OVER");
+        clearInterval(this.deusTimer); // Stop timer
+        this.state = "game over"
+        $("#gameOverModal").modal({"backdrop" : "static", "keyboard" : false});
+      }
     }
   }
   // Else everything OK and piece was already moved
@@ -667,13 +712,12 @@ Game.prototype.render = function(){
 
   // Determine height of playfield and set height of aux-container
   var playfieldHeight = (this.playfield.fieldHeight * this.playfield.blockDimension); 
-  console.log(playfieldHeight);
   $(".game-aux-container").css("height",playfieldHeight + "px");
 
   $(".game-aux-score-data").append(this.score);
   $(".game-aux-next-piece-data").append(this.nextPiece.render());
   $(".game-aux-level-data").append(this.level);
-  $(".game-aux-line-count-data").append(this.clearedLines);
+  $(".game-aux-line-count-data").append(this.clearedLinesTotal);
 
   if (this.logo) {
 
@@ -702,37 +746,49 @@ var logoTemplate = [[1,1,1,1,1,0,1,1,1,0,0,1,0,0,1,0,0,0,1,0,1,0,1,1,1],
 
 theGame.logo = new Piece(theGame.blockSizing,0,0);
 theGame.logo.parseBinaryTemplate(logoTemplate);
+theGame.logo.setColor(); // Random color
 
 // *********************************************************************
 
 $(document).on("ready", function() {
-  theGame.startGame();
+  theGame.newGame();
 });
 
 $(document).keydown(function(e) {
   e.preventDefault();
 
+  var maybeMove;
+
   switch(e.which) {
     case 37: // left
-      theGame.move("left");
+      maybeMove = "left";
       break;
-
     case 39: // right
-      theGame.move("right");
+      maybeMove = "right";
       break;
-
     case 40: // down
-      theGame.move("down");
+      maybeMove = "down";
       break;
-
     case 38: // up
-      theGame.move("up");
+      maybeMove = "up";
       break;
     case 32: // Space bar
-      theGame.toggleState();
-      break;
+      if (theGame.state === "game over"){
+        $("#gameOverModal").modal("hide");
+        theGame.newGame();
+
+        theGame.toggleState(); // Make game start immediately
+        $("#pausedModal").modal("toggle"); // Hide paused modal immediately
+      }
+      else {
+        theGame.toggleState();
+        $("#pausedModal").modal("toggle");
+      }
+      return;
     default:
       console.log("IGNORED USER INPUT");
+      return;
   }
-  currentPiece.render();
+
+  if (theGame.state === "running"){ theGame.move(maybeMove); }
 });
