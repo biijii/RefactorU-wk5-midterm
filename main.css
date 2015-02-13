@@ -90,3 +90,13 @@ body {
 .game-label{
 	margin-bottom: 1rem;
 }
+
+#block-size-pixels{
+	margin: auto;
+	width: 50%;
+	padding: 10px;
+}
+
+form p {
+	margin-bottom: 0;
+}

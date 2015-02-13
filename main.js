@@ -12,29 +12,33 @@ Block.prototype.setRelPos = function(coords){
   this.relx = coords[0];
   this.rely = coords[1];
   return this;
-}
+};
 
 Block.prototype.setColor = function(theColor){
  this.blockColor = theColor;
  return this;
-}
+};
 
 Block.prototype.render = function(){
-  var that=this;
+  // var that=this;
 
   if (this.$el === undefined){ 
     this.$el = $("<div>").addClass("block")
                          .css("position","absolute")
-                         .css("width",that.dimension)
-                         .css("height",that.dimension);
+                         .css("width",this.dimension)
+                         .css("height",this.dimension);
   }
 
-  this.$el.css("top",that.rely*that.dimension + "px")
-          .css("left",that.relx*that.dimension + "px");
-
-  this.$el.css("background",this.blockColor);
+  this.$el.css("top",this.rely*this.dimension + "px")
+          .css("left",this.relx*this.dimension + "px")
+          .css("background",this.blockColor);
 
   return this.$el;
+};
+
+Block.prototype.updateBlockSize = function(newBlockSize){
+  this.dimension = newBlockSize;
+  this.$el.css("width",this.dimension).css("height",this.dimension);
 };
 
 // *********************************************************************
@@ -67,7 +71,7 @@ Piece.prototype.getCoords = function(){
   return _.map(this.blocks, function(aBlock){
     return [that.posx + aBlock.relx, that.posy + aBlock.rely];
   });
-}
+};
 
 // Piece.prototype.setBlockSizing = function(blockSizing){
 //   this.blockSizing = blockSizing;
@@ -78,7 +82,7 @@ Piece.prototype.getCoords = function(){
 //   });
 
 //   return this;
-// }
+// };
 
 Piece.prototype.setRotation = function(whichRotation){
   this.rotation = whichRotation;
@@ -87,14 +91,14 @@ Piece.prototype.setRotation = function(whichRotation){
     this.blocks[i].setRelPos(this.rotations[this.rotation][i]);
   }
   return this;
-}
+};
 
 Piece.prototype.toggleRotation = function(){
   var newRotation = (this.rotation === this.rotations.length-1) ? 0 : this.rotation + 1;
 
   this.setRotation(newRotation);
   return this;
-}
+};
 
 Piece.prototype.defineRotations = function(templateArray){
   var that = this;
@@ -104,7 +108,7 @@ Piece.prototype.defineRotations = function(templateArray){
   })
 
   return this;
-}
+};
 
 Piece.prototype.parseTemplate = function(singleTemplate){
   var coords = [];
@@ -118,7 +122,7 @@ Piece.prototype.parseTemplate = function(singleTemplate){
   }
   if (this.dimensionY === undefined) { this.dimensionY = row; }
   return coords;
-}
+};
 
 Piece.prototype.setBlocksFromBinaryTemplate = function(binaryTemplate){
   this.blocks = [];
@@ -133,7 +137,7 @@ Piece.prototype.setBlocksFromBinaryTemplate = function(binaryTemplate){
   if (this.dimensionY === undefined) { this.dimensionY = row; }
 
   return this;
-}
+};
 
 Piece.prototype.computeMove = function(moveDirection){
   var that = this;
@@ -220,28 +224,37 @@ Piece.prototype.setColor = function(theColor){
   }
 
   return this;
-}
+};
 
 // Piece.prototype.getColor = function(){
 //   return this.blockColor;
 // }
 
 Piece.prototype.render = function(){
-  var that=this;
   if (this.$el === undefined){ 
     this.$el = $("<div>").css("position","absolute")
-                         .css("width",that.dimensionX*that.blockSizing + "px")
-                         .css("height",that.dimensionY*that.blockSizing + "px");
+                         .css("width",this.dimensionX*this.blockSizing + "px")
+                         .css("height",this.dimensionY*this.blockSizing + "px");
   }
 
-  this.$el.addClass("piece").css("top",that.posy*that.blockSizing + "px")
-                            .css("left",that.posx*that.blockSizing + "px");
+  this.$el.addClass("piece").css("top",this.posy*this.blockSizing + "px")
+                            .css("left",this.posx*this.blockSizing + "px");
 
-  _.map(that.blocks, function(aBlock){
+  var that = this;
+  _.map(this.blocks, function(aBlock){
     that.$el.append(aBlock.render());
   });
 
   return this.$el;
+};
+
+Piece.prototype.updateBlockSize = function(newBlockSize){
+  this.blockSizing = newBlockSize;
+  _.map(this.blocks, function(aBlock){
+    aBlock.updateBlockSize(newBlockSize);
+  });
+  this.$el.css("width",this.dimensionX*this.blockSizing + "px")
+          .css("height",this.dimensionY*this.blockSizing + "px");
 };
 
 // Rod
@@ -271,7 +284,7 @@ var Rod = function(blockSizing){
                  [0,0,0,0]];
 
   this.defineRotations(template);
-}
+};
 
 Rod.prototype = new Piece;
 Rod.prototype.constructor = Rod;
@@ -295,7 +308,7 @@ var Square = function(blockSizing){
                  [1,3]];
 
   this.defineRotations(template);
-}
+};
 
 Square.prototype = new Piece;
 Square.prototype.constructor = Square;
@@ -323,7 +336,7 @@ var RightS = function(blockSizing){
                  [0,2,4]];
 
   this.defineRotations(template);
-}
+};
 
 RightS.prototype = new Piece;
 RightS.prototype.constructor = RightS;
@@ -352,7 +365,7 @@ var LeftS = function(blockSizing){
                  [1,2,0]];
 
   this.defineRotations(template);
-}
+};
 
 LeftS.prototype = new Piece;
 LeftS.prototype.constructor = LeftS;
@@ -379,7 +392,7 @@ var ThreeSide = function(blockSizing){
                  [0,2,0]];
 
   this.defineRotations(template);
-}
+};
 
 ThreeSide.prototype = new Piece;
 ThreeSide.prototype.constructor = ThreeSide;
@@ -406,7 +419,7 @@ var RightL = function(blockSizing){
                  [1,2,3]];
 
   this.defineRotations(template);
-}
+};
 
 RightL.prototype = new Piece;
 RightL.prototype.constructor = RightL;
@@ -433,7 +446,7 @@ var LeftL = function(blockSizing){
                  [0,0,3]];
 
   this.defineRotations(template);
-}
+};
 
 LeftL.prototype = new Piece;
 LeftL.prototype.constructor = LeftL;
@@ -454,7 +467,7 @@ var Playfield = function(blockDimension,widthInBlocks,heightInBlocks){
 Playfield.prototype.resetPlayfield = function(){
   this.staticBlocks = [];
   return this;
-}
+};
 
 Playfield.prototype.checkCollision = function(coordArray){
   for (var i=0; i < coordArray.length; i++){
@@ -488,7 +501,7 @@ Playfield.prototype.setActivePiece = function(pieceObj){
   this.activePiece.posx = Math.round(this.fieldWidth/2)-Math.round(this.activePiece.dimensionX/2);
   this.activePiece.posy = 0;
   return this;
-}
+};
 
 Playfield.prototype.retireActivePiece = function(){
   var that = this;
@@ -503,7 +516,7 @@ Playfield.prototype.retireActivePiece = function(){
   this.staticBlocks = this.staticBlocks.concat(staticBlocks);
   this.activePiece = undefined;
   return this;
-}
+};
 
 Playfield.prototype.clearLines = function(){
   var that=this;
@@ -536,7 +549,7 @@ Playfield.prototype.clearLines = function(){
   }
 
   return clearedLines;
-}
+};
 
 Playfield.prototype.render = function(){
   if (this.$el === undefined) {
@@ -555,6 +568,19 @@ Playfield.prototype.render = function(){
 
   return this.$el;
 };
+
+Playfield.prototype.updateBlockSize = function(newBlockSize){
+  this.blockDimension = newBlockSize;
+  this.$el.css("width",this.fieldWidth*this.blockDimension+(2*this.bordersWidth))
+          .css("height",this.fieldHeight*this.blockDimension+(2*this.bordersWidth));
+
+  for(var i=0; i<this.staticBlocks.length; i++){
+    this.staticBlocks[i].updateBlockSize(newBlockSize);
+  }
+
+  if (this.activePiece) { this.activePiece.updateBlockSize(newBlockSize); }
+  if (this.nextPiece) { this.newPiece.updateBlockSize(newBlockSize); }
+}
 
 // *********************************************************************
 //     GAME (WHOLE SHEBANG)
@@ -586,7 +612,7 @@ var Game = function(blockSizing, playFieldDimensions,pieceFrequencies){
   }
 
   this.logo;
-}
+};
 
 Game.prototype.newGame = function(){
   this.deusSpeed = 500;
@@ -603,12 +629,12 @@ Game.prototype.newGame = function(){
   if (this.state === "welcome") { $("#welcomeModal").modal({"backdrop" : "static", "keyboard" : false}); }
 
   return this;
-}
+};
 
 Game.prototype.setState = function(theState){
   this.state = theState;
   return this;
-}
+};
 
 Game.prototype.toggleState = function(){
   var that = this;
@@ -627,7 +653,7 @@ Game.prototype.toggleState = function(){
   }
 
   return this;
-}
+};
 
 Game.prototype.generateNewPiece = function(){
   var that = this;
@@ -643,7 +669,7 @@ Game.prototype.generateNewPiece = function(){
   else {newPiece = new RightL(that.blockSizing); }
 
   return newPiece.setRotation(0).setColor();
-}
+};
 
 Game.prototype.move = function(moveDirection){
   if (!this.playfield.moveActivePiece(moveDirection)){
@@ -690,7 +716,7 @@ Game.prototype.move = function(moveDirection){
     }
   }
   // Else everything OK and piece was already moved
-}
+};
 
 Game.prototype.render = function(){
   if (this.$el === undefined) { this.$el = $(".game-container"); }
@@ -717,6 +743,14 @@ Game.prototype.render = function(){
   if (this.logo) { $(".game-logo").append(this.logo.render()); }
 
   return this.$el;
+};
+
+Game.prototype.updateBlockSize = function(newBlockSize){
+  this.blockSizing = newBlockSize;
+  this.playfield.updateBlockSize(newBlockSize);
+  this.nextPiece.updateBlockSize(newBlockSize);
+
+  return this;
 }
 
 // *********************************************************************
@@ -747,45 +781,52 @@ theGame.logo.setColor(); // Random color
 
 $(document).on("ready", function() {
   theGame.newGame();
+
+  $(document).keydown(function(e) {
+    e.preventDefault();
+
+    var maybeMove;
+
+    switch(e.which) {
+      case 37: // left
+        maybeMove = "left";
+        break;
+      case 39: // right
+        maybeMove = "right";
+        break;
+      case 40: // down
+        maybeMove = "down";
+        break;
+      case 38: // up
+        maybeMove = "up";
+        break;
+      case 32: // Space bar
+        switch(theGame.state){
+          case "welcome":
+            $("#welcomeModal").modal("hide");
+            theGame.setState("paused").toggleState(); // Set to pause and toggle to running
+            break;
+          case "game over":
+            $("#gameOverModal").modal("hide");
+            theGame.newGame(); // New game starts immediately
+            break;
+          default:
+            theGame.toggleState();
+            $("#pausedModal").modal("toggle");
+        }
+        return;
+      default:
+        console.log("IGNORED USER INPUT");
+        return;
+    }
+
+    if (theGame.state === "running"){ theGame.move(maybeMove); }
+  });
+
+  $(document).on("change", "#block-size-pixels", function(event){
+    event.preventDefault();
+    theGame.updateBlockSize(this.value).render();
+  });
+
 });
 
-$(document).keydown(function(e) {
-  e.preventDefault();
-
-  var maybeMove;
-
-  switch(e.which) {
-    case 37: // left
-      maybeMove = "left";
-      break;
-    case 39: // right
-      maybeMove = "right";
-      break;
-    case 40: // down
-      maybeMove = "down";
-      break;
-    case 38: // up
-      maybeMove = "up";
-      break;
-    case 32: // Space bar
-      switch(theGame.state){
-        case "welcome":
-          $("#welcomeModal").modal("hide");
-          theGame.setState("paused").toggleState(); // Set to pause and toggle to running
-          break;
-        case "game over":
-          $("#gameOverModal").modal("hide");
-          theGame.newGame(); // New game starts immediately
-          break;
-        default:
-          theGame.toggleState();
-          $("#pausedModal").modal("toggle");
-      }
-      return;
-    default:
-      console.log("IGNORED USER INPUT");
-      return;
-  }
-
-  if (theGame.state === "running"){ theGame.move(maybeMove); }
-});
