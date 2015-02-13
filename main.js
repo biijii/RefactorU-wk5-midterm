@@ -16,7 +16,8 @@ Block.prototype.setRelPos = function(coords){
 }
 
 Block.prototype.setColor = function(theColor){
- this.blockColor = theColor; 
+ this.blockColor = theColor;
+ return this;
 }
 
 Block.prototype.render = function(){
@@ -220,7 +221,7 @@ Piece.prototype.render = function(){
                          .css("width",that.dimensionX*that.blockSizing + "px")
                          .css("height",that.dimensionY*that.blockSizing + "px");
   }
-  else { this.$el.text(""); }
+  // else { this.$el.text(""); }
 
   this.$el.addClass("piece").css("top",that.posy*that.blockSizing + "px")
                             .css("left",that.posx*that.blockSizing + "px");
@@ -266,6 +267,8 @@ Rod.prototype.constructor = Rod;
 // Square
 // ***************************************************
 var Square = function(blockSizing){
+  // Piece.call(this,blockSizing);
+
   var template = [];
   template[0] = [[1,2],
                  [3,4]];
@@ -633,6 +636,7 @@ Game.prototype.toggleState = function(){
 
 Game.prototype.generateNewPiece = function(){
   var randomVal = Math.random();
+
   var newPiece;
 
   var that = this;
@@ -678,6 +682,9 @@ Game.prototype.move = function(moveDirection){
         this.deusSpeed *= (1-this.speedIncreasePerLevel);
         console.log("NEW DEUS SPEED: ", this.deusSpeed);
         this.toggleState();
+
+        // Change logo color
+        this.logo.setColor().render();
       }
 
       this.playfield.setActivePiece(this.nextPiece);
@@ -729,14 +736,14 @@ Game.prototype.render = function(){
 
 // *********************************************************************
 // *********************************************************************
+//   DEFINE OBJECTS | DEFINE OBJECTS | DEFINE OBJECTS | DEFINE OBJECTS
 // *********************************************************************
 // *********************************************************************
 
 var theGame = new Game(25,[15,20],[.04, .13, .19, .19, .19, .13, .13]);
 
-
 // *********************************************************************
-//     EXTRA: LOGO
+//  --- GAME LOGO ---
 // *********************************************************************
 var logoTemplate = [[1,1,1,1,1,0,1,1,1,0,0,1,0,0,1,0,0,0,1,0,1,0,1,1,1],
                     [0,0,1,0,0,0,1,0,1,0,0,1,0,0,1,1,1,0,1,0,1,0,0,0,1],
@@ -748,6 +755,10 @@ theGame.logo = new Piece(theGame.blockSizing,0,0);
 theGame.logo.parseBinaryTemplate(logoTemplate);
 theGame.logo.setColor(); // Random color
 
+// *********************************************************************
+// *********************************************************************
+//   RUN | RUN | RUN | RUN | RUN  RUN | RUN  RUN | RUN  RUN | RUN  RUN 
+// *********************************************************************
 // *********************************************************************
 
 $(document).on("ready", function() {
