@@ -20,8 +20,6 @@ Block.prototype.setColor = function(theColor){
 };
 
 Block.prototype.render = function(){
-  // var that=this;
-
   if (this.$el === undefined){ 
     this.$el = $("<div>").addClass("block")
                          .css("position","absolute")
@@ -225,10 +223,6 @@ Piece.prototype.setColor = function(theColor){
 
   return this;
 };
-
-// Piece.prototype.getColor = function(){
-//   return this.blockColor;
-// }
 
 Piece.prototype.render = function(){
   if (this.$el === undefined){ 
@@ -461,7 +455,7 @@ var Playfield = function(blockDimension,widthInBlocks,heightInBlocks){
   this.activePiece;
   this.staticBlocks = [];
 
-  this.bordersWidth = 5; //Width in pixels of playfield border --> match to CSS
+  this.bordersWidth = 5; // px
 };
 
 Playfield.prototype.resetPlayfield = function(){
@@ -554,6 +548,7 @@ Playfield.prototype.clearLines = function(){
 Playfield.prototype.render = function(){
   if (this.$el === undefined) {
     this.$el = $("<div>").addClass("playfield")
+                         .css("border-width", this.bordersWidth + "px")
                          .css("position","relative")
                          .css("width",this.fieldWidth*this.blockDimension+(2*this.bordersWidth))
                          .css("height",this.fieldHeight*this.blockDimension+(2*this.bordersWidth));
@@ -579,7 +574,6 @@ Playfield.prototype.updateBlockSize = function(newBlockSize){
   }
 
   if (this.activePiece) { this.activePiece.updateBlockSize(newBlockSize); }
-  if (this.nextPiece) { this.newPiece.updateBlockSize(newBlockSize); }
 }
 
 // *********************************************************************
@@ -755,7 +749,7 @@ Game.prototype.updateBlockSize = function(newBlockSize){
 
 // *********************************************************************
 // *********************************************************************
-//   DEFINE OBJECTS | DEFINE OBJECTS | DEFINE OBJECTS | DEFINE OBJECTS
+//   CREATE OBJECTS | CREATE OBJECTS | CREATE OBJECTS | CREATE OBJECTS
 // *********************************************************************
 // *********************************************************************
 var theGame = new Game(25,[12,20],[.08, .2, .13, .13, .20, .13, .13]);

@@ -15,7 +15,6 @@ body {
 
 .tetruz-modal *{
 	text-align: center;
-
 	background: #e67e22;
 }
 
@@ -41,7 +40,7 @@ body {
 	overflow: hidden;
 
 	background: #3498db;
-	border: 5px solid #95a5a6;
+	border: solid #95a5a6; /*Width set in JS*/
 }
 
 .game-aux-container {
