@@ -803,12 +803,13 @@ $(document).on("ready", function() {
             break;
           case "game over":
             $("#gameOverModal").modal("hide");
-            theGame.newGame();
-            theGame.setState("paused").toggleState();
+            theGame.newGame().setState("paused").toggleState();
             break;
-          default:
+          case "paused":
+          case "running":
             theGame.toggleState();
             $("#pausedModal").modal("toggle");
+          default: break;
         }
         return;
       default:
