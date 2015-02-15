@@ -609,6 +609,7 @@ var Game = function(blockSizing, playFieldDimensions,pieceFrequencies){
 };
 
 Game.prototype.newGame = function(){
+  console.log("NEW GAME");
   this.deusSpeed = 500;
 
   this.clearedLinesTotal = 0;
@@ -802,7 +803,8 @@ $(document).on("ready", function() {
             break;
           case "game over":
             $("#gameOverModal").modal("hide");
-            theGame.newGame(); // New game starts immediately
+            theGame.newGame();
+            theGame.setState("paused").toggleState();
             break;
           default:
             theGame.toggleState();
@@ -817,8 +819,7 @@ $(document).on("ready", function() {
     if (theGame.state === "running"){ theGame.move(maybeMove); }
   });
 
-  $(document).on("change", "#block-size-pixels", function(event){
-    event.preventDefault();
+  $(document).on("change", "#block-size-pixels", function(){
     theGame.updateBlockSize(this.value).render();
   });
 
